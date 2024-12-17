@@ -2,7 +2,7 @@ package com.remix.authAPI.controller;
 
 import com.remix.authAPI.entity.User;
 import com.remix.authAPI.service.UserService;
-import com.response.ResponseHandler;
+import com.remix.authAPI.response.ResponseHandler;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,13 +22,13 @@ public class UserController extends ResponseHandler {
 
     @GetMapping
     public ResponseEntity<Object> getAllUsers() {
-        List<User> users = userService.getAllUsers();
+        List<User> users = userService.findAll();
         return generateSuccessResponse(users);
     }
 
     @GetMapping("/{id}")
     public ResponseEntity<Object> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id)
+        return userService.findById(id)
                 .map(this::generateSuccessResponse)
                 .orElse(generateErrorResponse("Utilisateur non trouvé", HttpStatus.NOT_FOUND));
     }
@@ -36,7 +36,7 @@ public class UserController extends ResponseHandler {
     @PostMapping
     public ResponseEntity<Object> createUser(@RequestBody User user) {
         try {
-            User savedUser = userService.createUser(user);
+            User savedUser = userService.save(user);
             return generateSuccessResponse(savedUser);
         } catch (Exception e) {
             return generateErrorResponse("Erreur lors de la création de l'utilisateur", HttpStatus.BAD_REQUEST);
@@ -45,7 +45,7 @@ public class UserController extends ResponseHandler {
 
     @PutMapping("/{id}")
     public ResponseEntity<Object> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return userService.getUserById(id)
+        return userService.findById(id)
                 .map(existingUser -> {
                     user.setId(id);
                     User updatedUser = userService.updateUser(user);
@@ -56,8 +56,8 @@ public class UserController extends ResponseHandler {
 
     @DeleteMapping("/{id}")
     public ResponseEntity<Object> deleteUser(@PathVariable Long id) {
-        if (userService.getUserById(id).isPresent()) {
-            userService.deleteUser(id);
+        if (userService.findById(id).isPresent()) {
+            userService.deleteById(id);
             return generateSuccessResponse("Utilisateur supprimé avec succès");
         }
         return generateErrorResponse("Utilisateur non trouvé", HttpStatus.NOT_FOUND);
