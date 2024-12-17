@@ -1,4 +1,7 @@
 -- Creation des tables pour le fournisseur d'identité
+CREATE DATABASE authAPI;
+
+\C authAPI;
 
 -- Table des utilisateurs
 CREATE TABLE users (
