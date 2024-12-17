@@ -21,7 +21,7 @@ import com.remix.authAPI.repositories.UserRepository;
 
 @RestController
 @RequestMapping("/api/auth")
-public class Inscription {
+public class InscriptionController {
 
     @Autowired
     private UserRepository userRepository;
@@ -87,6 +87,7 @@ public class Inscription {
         );
     }
 
+
     @GetMapping("/verify-email")
     public ResponseEntity<Object> verifyEmail(@RequestParam String token) {
         System.out.println("Tentative de vérification avec le token : " + token);
@@ -105,18 +106,41 @@ public class Inscription {
         
         User user = userOptional.get();
         
-        // Vérifier si le token n'a pas expiré
-        if (user.getEmailVerificationExpiry().isBefore(LocalDateTime.now())) {
-            System.out.println("Token expiré pour l'utilisateur : " + user.getEmail());
+        // Vérifier si l'email est déjà vérifié
+        if (user.getIsEmailVerified()) {
+            System.out.println("Email déjà vérifié pour : " + user.getEmail());
             return ResponseHandler.generateResponse(
-                "Le lien de vérification a expiré", 
+                "Cet email a déjà été vérifié", 
                 false, 
                 400, 
                 null
             );
         }
         
-        // Marquer l'email comme vérifié
+        // Vérifier si le token n'a pas expiré
+        if (user.getEmailVerificationExpiry() == null || 
+            LocalDateTime.now().isAfter(user.getEmailVerificationExpiry())) {
+            System.out.println("Token expiré pour l'utilisateur : " + user.getEmail());
+            
+            // Générer un nouveau token
+            String newToken = UUID.randomUUID().toString();
+            user.setEmailVerificationToken(newToken);
+            user.setEmailVerificationExpiry(LocalDateTime.now().plusHours(24));
+            userRepository.save(user);
+            
+            // Envoyer un nouveau mail
+            String verificationLink = "http://localhost:8080/api/auth/verify-email?token=" + newToken;
+            emailService.sendVerificationEmail(user.getEmail(), verificationLink);
+            
+            return ResponseHandler.generateResponse(
+                "Le lien de vérification a expiré. Un nouveau lien vous a été envoyé par email.", 
+                false, 
+                400, 
+                null
+            );
+        }
+        
+        // Marquer l'email comme vérifié et supprimer le token
         user.setIsEmailVerified(true);
         user.setEmailVerificationToken(null);
         user.setEmailVerificationExpiry(null);
