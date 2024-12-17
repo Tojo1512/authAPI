@@ -1,4 +1,4 @@
-package com.response;
+package com.remix.authAPI.response;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
