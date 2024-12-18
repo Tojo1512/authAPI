@@ -1,0 +1,22 @@
+les themes pour projet Bavl
+
+    Pharmacie
+        produit
+        maladie
+        laboratoire
+        --base d'application pour pharmacie(crud , recherche , mcd, ...)
+        --geestion
+
+    Atelier de reparetion d'ordi
+        ordi
+        composant
+        reparation
+        --base d'application (crud , recherche , ...)
+    
+    Boulangerie
+        ingredient
+        produit
+        production
+        --base d'application (crud , recherche , ...)
+
+
