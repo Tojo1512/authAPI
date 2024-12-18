@@ -13,11 +13,6 @@ public class TestController {
 
     @GetMapping("/")
     public ResponseEntity<Object> test() {
-        return ResponseHandler.generateResponse(
-            "L'API fonctionne correctement", 
-            true, 
-            200, 
-            null
-        );
+        return new ResponseHandler().generateSuccessResponse("L'API fonctionne correctement");
     }
 }
