@@ -1,4 +1,4 @@
-package com.remix.authAPI.service;
+package com.remix.authAPI.services;
 
 import com.remix.authAPI.entity.User;
 import com.remix.authAPI.repository.UserRepository;

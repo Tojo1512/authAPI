@@ -1,7 +1,7 @@
-package com.remix.authAPI.controller;
+package com.remix.authAPI.controllers;
 
 import com.remix.authAPI.entity.User;
-import com.remix.authAPI.service.UserService;
+import com.remix.authAPI.services.UserService;
 import com.remix.authAPI.response.ResponseHandler;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
