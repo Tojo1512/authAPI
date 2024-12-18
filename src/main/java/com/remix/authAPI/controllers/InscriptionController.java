@@ -7,7 +7,7 @@ import org.springframework.http.HttpStatus;
 
 import com.remix.authAPI.response.ResponseHandler;
 import com.remix.authAPI.services.UserService;
-import com.remix.authAPI.models.User;
+import com.remix.authAPI.entity.User;
 
 @RestController
 @RequestMapping("/api/auth")

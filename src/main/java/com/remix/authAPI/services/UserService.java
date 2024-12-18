@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.beans.factory.annotation.Value;
 
-import com.remix.authAPI.models.User;
+import com.remix.authAPI.entity.User;
 import com.remix.authAPI.repositories.UserRepository;
 
 import java.util.List;
