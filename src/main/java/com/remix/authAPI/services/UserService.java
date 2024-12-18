@@ -1,19 +1,31 @@
 package com.remix.authAPI.services;
 
-import com.remix.authAPI.entity.User;
-import com.remix.authAPI.repository.UserRepository;
-import org.springframework.beans.factory.annotation.Value;
+import java.time.LocalDateTime;
+import java.util.Optional;
+import java.util.UUID;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
-import java.time.LocalDateTime;
+import com.remix.authAPI.models.User;
+import com.remix.authAPI.repositories.UserRepository;
+
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private EmailService emailService;
     
     @Value("${app.security.max-login-attempts}")
     private Integer maxLoginAttempts;
@@ -103,5 +115,61 @@ public class UserService {
     @Transactional
     public User updateUser(User user) {
         return userRepository.save(user);
+    }
+
+     @Transactional
+    public User registerUser(User user) {
+        if (userRepository.findByEmail(user.getEmail()).isPresent()) {
+            throw new RuntimeException("L'email existe déjà");
+        }
+
+        // Encoder le mot de passe
+        user.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+        
+        // Générer le token de vérification
+        String verificationToken = UUID.randomUUID().toString();
+        user.setEmailVerificationToken(verificationToken);
+        user.setEmailVerificationExpiry(LocalDateTime.now().plusHours(24));
+        
+        // Sauvegarder l'utilisateur
+        User savedUser = userRepository.save(user);
+
+        // Envoyer l'email de vérification
+        String verificationLink = "http://localhost:8080/api/auth/verify-email?token=" + verificationToken;
+        emailService.sendVerificationEmail(user.getEmail(), verificationLink);
+
+        return savedUser;
+    }
+
+    @Transactional
+    public void verifyEmail(String token) {
+        User user = userRepository.findByEmailVerificationToken(token)
+            .orElseThrow(() -> new RuntimeException("Token de vérification invalide"));
+
+        if (user.getIsEmailVerified()) {
+            throw new RuntimeException("Cet email a déjà été vérifié");
+        }
+
+        if (user.getEmailVerificationExpiry() == null || 
+            LocalDateTime.now().isAfter(user.getEmailVerificationExpiry())) {
+            
+            // Générer un nouveau token
+            String newToken = UUID.randomUUID().toString();
+            user.setEmailVerificationToken(newToken);
+            user.setEmailVerificationExpiry(LocalDateTime.now().plusHours(24));
+            userRepository.save(user);
+            
+            // Envoyer un nouveau mail
+            String verificationLink = "http://localhost:8080/api/auth/verify-email?token=" + newToken;
+            emailService.sendVerificationEmail(user.getEmail(), verificationLink);
+            
+            throw new RuntimeException("Le lien de vérification a expiré. Un nouveau lien vous a été envoyé par email.");
+        }
+
+        // Marquer l'email comme vérifié et supprimer le token
+        user.setIsEmailVerified(true);
+        user.setEmailVerificationToken(null);
+        user.setEmailVerificationExpiry(null);
+        userRepository.save(user);
     }
 } 
