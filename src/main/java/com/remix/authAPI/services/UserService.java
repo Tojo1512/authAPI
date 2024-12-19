@@ -172,4 +172,31 @@ public class UserService {
         user.setEmailVerificationExpiry(null);
         userRepository.save(user);
     }
+
+    @Transactional
+    public User authenticateUser(String email, String password) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Email ou mot de passe incorrect"));
+
+        // Vérifier si le compte est verrouillé
+        if (isAccountLocked(email)) {
+            throw new RuntimeException("Compte temporairement verrouillé. Veuillez réessayer plus tard.");
+        }
+
+        // Vérifier si l'email est vérifié
+        if (!user.getIsEmailVerified()) {
+            throw new RuntimeException("Veuillez vérifier votre email avant de vous connecter");
+        }
+
+        // Vérifier le mot de passe
+        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            incrementFailedLoginAttempts(email);
+            throw new RuntimeException("Email ou mot de passe incorrect");
+        }
+
+        // Réinitialiser les tentatives de connexion en cas de succès
+        resetFailedLoginAttempts(email);
+        
+        return user;
+    }
 } 
