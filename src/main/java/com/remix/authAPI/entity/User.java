@@ -45,6 +45,18 @@ public class User {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "two_factor_code")
+    private String twoFactorCode;
+
+    @Column(name = "two_factor_code_expiry")
+    private LocalDateTime twoFactorCodeExpiry;
+
+    @Column(name = "failed_2fa_attempts")
+    private Integer failed2FAAttempts = 0;
+
+    @Column(name = "last_failed_2fa")
+    private LocalDateTime lastFailed2FA;
+
     @PrePersist
     protected void onCreate() {
         createdAt = LocalDateTime.now();
