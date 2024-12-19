@@ -1,7 +1,7 @@
 -- Creation des tables pour le fournisseur d'identité
 CREATE DATABASE authAPI;
 
-\C authAPI;
+\c authAPI;
 
 -- Table des utilisateurs
 CREATE TABLE users (
@@ -11,12 +11,16 @@ CREATE TABLE users (
     is_email_verified BOOLEAN DEFAULT FALSE,
     email_verification_token VARCHAR(255),
     email_verification_expiry TIMESTAMP,
+    two_factor_code VARCHAR(6),
+    two_factor_expiry TIMESTAMP,
     failed_login_attempts INTEGER DEFAULT 0,
     last_failed_login TIMESTAMP,
     account_locked BOOLEAN DEFAULT FALSE,
     account_locked_until TIMESTAMP,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    faild_2fa_attempts INTEGER DEFAULT 0,
+    last_failed_2fa_login TIMESTAMP
 );
 
 
