@@ -14,6 +14,7 @@ import com.remix.authAPI.entity.User;
 import com.remix.authAPI.repositories.UserRepository;
 
 import java.util.List;
+import java.security.SecureRandom;
 
 @Service
 public class UserService {
@@ -29,6 +30,9 @@ public class UserService {
     
     @Value("${app.security.max-login-attempts}")
     private Integer maxLoginAttempts;
+
+    @Value("${app.security.two-factor-code-length}")
+    private int twoFactorCodeLength;
 
     public UserService(UserRepository userRepository) {
         this.userRepository = userRepository;
@@ -198,5 +202,112 @@ public class UserService {
         resetFailedLoginAttempts(email);
         
         return user;
+    }
+
+
+    private String generateTwoFactorCode() {
+        SecureRandom random = new SecureRandom();
+        StringBuilder code = new StringBuilder();
+        for (int i = 0; i < twoFactorCodeLength; i++) {
+            code.append(random.nextInt(10));
+        }
+        return code.toString();
+    }
+
+    @Transactional
+    public User initiateLogin(String email, String password) {
+        User user = authenticateUser(email, password);
+        
+        // Générer et sauvegarder le code 2FA
+        String twoFactorCode = generateTwoFactorCode();
+        user.setTwoFactorCode(twoFactorCode);
+        user.setTwoFactorCodeExpiry(LocalDateTime.now().plusMinutes(5));
+        userRepository.save(user);
+        
+        // Envoyer le code par email
+        emailService.send2FACode(user.getEmail(), twoFactorCode);
+        
+        return user;
+    }
+
+    @Transactional
+    public User verifyTwoFactorCode(String email, String code) {
+        User user = userRepository.findByEmail(email)
+            .orElseThrow(() -> new RuntimeException("Utilisateur non trouvé"));
+
+        if (isAccountLocked(email)) {
+            throw new RuntimeException("Compte temporairement verrouillé. Vérifiez vos emails pour le débloquer.");
+        }
+
+        if (user.getTwoFactorCode() == null || user.getTwoFactorCodeExpiry() == null) {
+            throw new RuntimeException("Aucun code 2FA n'a été généré");
+        }
+
+        if (LocalDateTime.now().isAfter(user.getTwoFactorCodeExpiry())) {
+            throw new RuntimeException("Le code 2FA a expiré");
+        }
+
+        if (!user.getTwoFactorCode().equals(code)) {
+            increment2FAAttempts(email);
+            throw new RuntimeException("Code 2FA invalide");
+        }
+
+        // Réinitialiser les tentatives en cas de succès
+        reset2FAAttempts(email);
+        resetFailedLoginAttempts(email);
+
+        // Nettoyer le code 2FA après utilisation
+        user.setTwoFactorCode(null);
+        user.setTwoFactorCodeExpiry(null);
+        return userRepository.save(user);
+    }
+
+    @Transactional
+    public void increment2FAAttempts(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            user.setFailed2FAAttempts(user.getFailed2FAAttempts() + 1);
+            user.setLastFailed2FA(LocalDateTime.now());
+            
+            if (user.getFailed2FAAttempts() >= maxLoginAttempts) {
+                user.setAccountLocked(true);
+                user.setAccountLockedUntil(LocalDateTime.now().plusHours(1));
+                // Envoyer un email de réinitialisation
+                sendUnlockEmail(user.getEmail());
+            }
+            
+            userRepository.save(user);
+        });
+    }
+
+    @Transactional
+    public void reset2FAAttempts(String email) {
+        userRepository.findByEmail(email).ifPresent(user -> {
+            user.setFailed2FAAttempts(0);
+            user.setLastFailed2FA(null);
+            userRepository.save(user);
+        });
+    }
+
+    private void sendUnlockEmail(String email) {
+        String unlockToken = UUID.randomUUID().toString();
+        User user = userRepository.findByEmail(email).orElseThrow();
+        user.setUnlockToken(unlockToken);
+        userRepository.save(user);
+        
+        String unlockLink = "http://localhost:8080/api/auth/unlock-account?token=" + unlockToken;
+        emailService.sendUnlockEmail(email, unlockLink);
+    }
+
+    @Transactional
+    public void unlockAccount(String token) {
+        User user = userRepository.findByUnlockToken(token)
+            .orElseThrow(() -> new RuntimeException("Token invalide"));
+        
+        user.setAccountLocked(false);
+        user.setAccountLockedUntil(null);
+        user.setFailedLoginAttempts(0);
+        user.setFailed2FAAttempts(0);
+        user.setUnlockToken(null);
+        userRepository.save(user);
     }
 } 
