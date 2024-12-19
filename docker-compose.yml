@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Service PostgreSQL
+  postgres:
+    image: postgres:16-alpine
+    container_name: auth-api-postgres
+    environment:
+      POSTGRES_DB: authapi
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: root
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database:/docker-entrypoint-initdb.d
+    networks:
+      - auth-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Service Spring Boot
+  api:
+    build: .
+    container_name: auth-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Configuration de la base de données
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/authapi
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: root
+      
+      # Configuration email
+      SPRING_MAIL_HOST: smtp.gmail.com
+      SPRING_MAIL_PORT: 587
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD}
+      
+      # Autres configurations
+      SERVER_PORT: 8080
+      APP_SECURITY_MAX-LOGIN-ATTEMPTS: 3
+      APP_SESSION_TIMEOUT-MINUTES: 10
+      APP_SESSION_CLEANUP-INTERVAL-MINUTES: 600
+    ports:
+      - "8080:8080"
+    networks:
+      - auth-network
+    restart: unless-stopped
+
+# Définition des volumes
+volumes:
+  postgres_data:
+    name: auth-api-postgres-data
+
+# Définition des réseaux
+networks:
+  auth-network:
+    name: auth-api-network

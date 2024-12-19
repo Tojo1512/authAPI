@@ -1,0 +1,31 @@
+# Fichiers Git
+.git
+.gitignore
+
+# Fichiers Maven
+target/*
+!target/*.jar
+
+# Fichiers IDE
+.idea/
+*.iml
+.vscode/
+.settings/
+.project
+.classpath
+
+# Logs
+logs/
+*.log
+
+# Fichiers Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
+
+# Autres
+README.md
+.env
+
+# Scripts d'initialisation PostgreSQL
+docker/postgres/init/*.sql

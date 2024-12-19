@@ -1,0 +1,85 @@
+BASE_URL: http://localhost:8080
+
+AUTHENTIFICATION
+---------------
+1. Login
+POST /api/auth/login
+Body: {
+    "email": "string",
+    "password": "string"
+}
+
+2. Register
+POST /api/auth/register
+Body: {
+    "email": "string",
+    "passwordHash": "string"
+}
+
+3. Verify Email
+GET /api/auth/verify-email?token={token}
+
+4. Test Auth API
+GET /api/auth/test
+
+
+SESSIONS
+--------
+1. Validate Session
+POST /api/sessions/validate
+Headers: {
+    "Session-Token": "string"
+}
+
+2. Logout
+POST /api/sessions/logout
+Headers: {
+    "Session-Token": "string"
+}
+
+
+USERS
+-----
+1. Get All Users
+GET /api/users
+
+2. Get User by ID
+GET /api/users/{id}
+
+3. Create User
+POST /api/users
+Body: {
+    "email": "string",
+    "passwordHash": "string"
+}
+
+4. Update User
+PUT /api/users/{id}
+Body: {
+    "email": "string",
+    "passwordHash": "string"
+}
+
+5. Delete User
+DELETE /api/users/{id}
+
+6. Check Login Attempts
+GET /api/users/check-login-attempts/{email}
+
+
+TEST
+----
+1. Test API
+GET /api/test/
+
+Notes:
+- Tous les endpoints commençant par /api sont publics (pas besoin d'authentification)
+- Pour les requêtes nécessitant une authentification, inclure le token de session dans le header "Session-Token"
+- Les réponses sont formatées selon le schéma:
+  {
+    "data": object | null,
+    "error": string | null,
+    "code": number,
+    "status": string,
+    "meta": object | null
+  } 
