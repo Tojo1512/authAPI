@@ -16,8 +16,16 @@ import com.remix.authAPI.response.ResponseHandler;
 import java.util.HashMap;
 import java.util.Map;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/auth")
+@Tag(name = "Authentification", description = "API d'authentification avec 2FA")
 public class LoginController {
 
     @Autowired
@@ -26,6 +34,13 @@ public class LoginController {
     @Autowired
     private SessionService sessionService;
 
+    @Operation(summary = "Initiation de la connexion", 
+              description = "Première étape de connexion qui déclenche l'envoi du code 2FA")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Code 2FA envoyé avec succès"),
+        @ApiResponse(responseCode = "401", description = "Identifiants invalides"),
+        @ApiResponse(responseCode = "500", description = "Erreur serveur")
+    })
     @PostMapping("/login/initiate")
     public ResponseEntity<Object> initiateLogin(@RequestBody LoginRequest loginRequest) {
         try {
@@ -44,6 +59,14 @@ public class LoginController {
         }
     }
 
+    @Operation(summary = "Vérification du code 2FA", 
+              description = "Seconde étape de connexion qui vérifie le code 2FA")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "Authentification réussie",
+            content = @Content(schema = @Schema(implementation = Session.class))),
+        @ApiResponse(responseCode = "401", description = "Code 2FA invalide"),
+        @ApiResponse(responseCode = "500", description = "Erreur serveur")
+    })
     @PostMapping("/login/verify")
     public ResponseEntity<Object> verifyTwoFactor(@RequestBody TwoFactorVerificationRequest request) {
         try {
